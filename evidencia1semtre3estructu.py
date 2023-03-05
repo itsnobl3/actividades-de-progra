@@ -1,4 +1,4 @@
-#import tabulate 
+import tabulate 
 
 diccionario1={}
 
@@ -215,7 +215,7 @@ def reporte_total():
 
 # Mostrar la tabla utilizando tabulate
     headers = ["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"]
-    #print(#tabulate(data, headers=headers))
+    print(tabulate(data, headers=headers))
 
 
 menu_principal()          
