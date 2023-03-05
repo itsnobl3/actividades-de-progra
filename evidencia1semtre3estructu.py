@@ -69,14 +69,7 @@ def consultar_ejemplar():
         reporte_total()
         titulo1 = input("Introduce el título: ")
         #lista para almacenar la busqueda
-        # con la sentencia for recorre cada elemento del diccionario 'diccionario1
-        #la variable "identificador" almacena la clave 
-        #y "datos" se utiliza para almacenar el valor 
-        #(es decir, el diccionario que contiene los datos del ejemplar).
-        #La condición verifica si el valor del campo isbn del diccionario 
-        #"datos" es igual al valor de la variable titulo1
-        #si la condicion es verdadera se agrega el valor a la lista
-        #y  al final esta lista se utiliza para imprimir los datos que el usuario busco
+       
         encontrados = [identificador for identificador, datos in diccionario1.items() if datos['titulo'] == titulo1.upper()]
         if encontrados:
             print(f"Se encontraron {len(encontrados)} ejemplares con el título '{titulo1}':")
