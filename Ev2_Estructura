@@ -1,0 +1,361 @@
+import datetime 
+from tabulate import tabulate
+import csv
+import openpyxl 
+import os 
+from pyfiglet import figlet_format
+from colorama import Fore
+
+diccionario1={}
+
+def menu_principal():
+    while True:
+        print(Fore.MAGENTA + figlet_format("MENU PRINCIPAL", font="standard"))
+        print(Fore.WHITE + ("ELIJA UNA OPCION"))
+        print("[1]. Agregar un nuevo registro")
+        print("[2]. Consultar registros")
+        print("[3]. Salir y guardar")
+        print("[4]. Salir sin guardar")
+        respuesta = int(input("¿Cual es la opcion que desea?: "))
+        if respuesta == 1:
+            agregar_registro()
+        elif respuesta == 2:
+            sub_menu()
+        elif respuesta == 3:
+            guardar_datos()
+            print (Fore.YELLOW+("*"*50))
+            print(Fore.YELLOW+("Hasta luego"))
+            print ("*"*50)
+            exit()
+        else:
+            print("Vuelva a escoger una opcion valida")
+
+archivo_csv = "datos.csv"
+if os.path.isfile(archivo_csv):
+    with open(archivo_csv, "r") as archivo:
+        lector = csv.reader(archivo)
+        next(lector)  # Salta la primera fila (encabezado)
+        for fila in lector:
+            identificador, titulo, autor, genero, año, isbn, fecha_str = fila
+            
+            diccionario1[int(identificador)] = {"titulo":titulo, "autor":autor, "genero":genero,"año":año, "isbn":isbn, "fecha":fecha_str}
+else:
+    print (Fore.YELLOW+("*"*50))
+    print(Fore.YELLOW+ ("'No se encontró ningún archivo existente. Se procede a crear un nuevo archivo llamado 'datos.csv'"))
+    print ("*"*50)
+    with open(archivo_csv, "w") as archivo:
+        escritor = csv.writer(archivo)
+        escritor.writerow(["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"])
+
+def guardar_datos():
+    with open(archivo_csv, "w", newline='') as archivo:
+        escritor = csv.writer(archivo)
+        escritor.writerow(["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"])
+        for identificador, datos in diccionario1.items():
+            escritor.writerow([identificador, datos["titulo"], datos["autor"], datos["genero"], int(datos["año"]), datos["isbn"], str(datos["fecha"])])
+
+
+def agregar_registro():
+    while True:
+        continuar=input("¿desea agregar un nuevo ejemplar?[S/N]").upper()
+        if continuar=="S":
+            titulo=input("¿Ingrese el nombre del ejemplar?").upper()
+            autor=input("cual el autor: ").upper()
+            genero=input("Cual es el genero: ").upper()
+            año=int(input("Cual es el año de publicacion: "))
+            isbn=input("Cual es el isbn: ").upper()
+            fecha_adquisicion=input("dime la fecha de adquisicion: ").upper() 
+
+
+            if diccionario1:
+                identificador=max(diccionario1) + 1
+            else:
+                identificador=1
+                #diccionario principal donde se gurdaran los ejemplares que ingreso
+                #el usuario
+            diccionario1[identificador]={"titulo":titulo, "autor":autor, "genero":genero,"año":año, "isbn":isbn, "fecha":fecha_adquisicion}
+            
+        else:
+            menu_principal()
+
+def sub_menu():
+    
+    while True:
+        print("*** MENU DE CONSULTAS ***")
+        print("ELIJA UNA OPCION")
+        print("[1]. Búsqueda de libro")
+        print("[2]. Reporte")
+        print("[3]. Volver al menu principal")
+        respuesta = int(input("¿Cual es la opcion que desea?: "))
+        if respuesta == 1:
+            consultar_ejemplar()
+        elif respuesta == 2:
+            submenu_reporte()
+        elif respuesta == 3:
+            menu_principal()
+        else:
+            print("Opción inválida. Por favor, intente nuevamente")
+                  
+
+def consultar_ejemplar():
+    print("Consultar los datos de un Ejemplar")
+    opcion = input("¿Cómo deseas buscar el ejemplar? [1. Título, 2. ISBN]: ")
+    if opcion == "1":
+        reporte_total1()
+        titulo1 = input("Introduce el título: ")
+        encontrados = [identificador for identificador, datos in diccionario1.items() if datos['titulo'] == titulo1.upper()]
+        if encontrados:
+            print(f"Se encontraron {len(encontrados)} ejemplares con el título '{titulo1}':")
+            for identificador in encontrados:
+                datos = diccionario1[identificador]
+                print(f"Identificador: {identificador}, título: {datos['titulo']}, autor: {datos['autor']}, genero: {datos['genero']}, año: {datos['año']}, isbn: {datos['isbn']}, fecha: {datos['fecha']}")
+        else:
+            print(f"No se encontraron ejemplares con el título '{titulo1}'")
+            
+    elif opcion=="2":
+        reporte_total1()
+        isbn1 = input("Introduce el isbn: ")
+        
+        encontrados = [identificador for identificador, datos in diccionario1.items() if datos['isbn'] == isbn1.upper()]
+        if encontrados:
+            print(f"Se encontraron {len(encontrados)} ejemplares con el título '{isbn1}':")
+            for identificador in encontrados:
+                datos = diccionario1[identificador]
+                print(f"Identificador: {identificador}, título: {datos['titulo']}, autor: {datos['autor']},genero: {datos['genero']}, año: {datos['año']}, isbn: {datos['isbn']}, fecha: {datos['fecha']}")
+        else:
+            print(f"No se encontraron ejemplares con el isbn '{isbn1}'")
+
+
+def reporte():
+    autores = list(set([libro["autor"] for libro in diccionario1.values()]))
+
+    print("Autores disponibles:")
+    for i, autor in enumerate(autores):
+        print(f"{i+1}. {autor}")
+    
+    opcion_autor = int(input("Seleccione el número del autor: "))
+    autor_seleccionado = autores[opcion_autor - 1]
+    
+    tabla_ejemplares = []
+    for identificador, libro in diccionario1.items():
+        if libro["autor"] == autor_seleccionado:
+            tabla_ejemplares.append([libro["titulo"], libro["genero"], libro["año"], libro["isbn"], libro["fecha"], identificador, libro["autor"]]) # agregamos el identificador al final de la lista
+    
+    longitudes_columnas = [max([len(str(ejemplar[i])) for ejemplar in tabla_ejemplares]+[len(header[i])]) for i, header in enumerate(["Título", "Género", "Año", "ISBN", "Fecha de adquisición", "Identificador"])]
+
+    # Actualizamos los encabezados para incluir "Identificador"
+    print(f"Reporte para el autor '{autor_seleccionado}':")
+    print("| Título" + " "*(longitudes_columnas[0]-6) + " | Género" + " "*(longitudes_columnas[1]-6) + " | Año" + " "*(longitudes_columnas[2]-4) + " | ISBN" + " "*(longitudes_columnas[3]-13) + " | Fecha de adquisición" + " "*(longitudes_columnas[4]-21) + " | Identificador" + " "*(longitudes_columnas[5]-13) + " |")
+    print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|" + "-"*(longitudes_columnas[5]+2) + "|")
+    for ejemplar in tabla_ejemplares:
+        print(f"| {ejemplar[0]:{longitudes_columnas[0]}} | {ejemplar[1]:{longitudes_columnas[1]}} | {ejemplar[2]:{longitudes_columnas[2]}} | {ejemplar[3]:{longitudes_columnas[3]}} | {ejemplar[4]:{longitudes_columnas[4]}} | {ejemplar[5]:{longitudes_columnas[5]}} |")
+        print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|" + "-"*(longitudes_columnas[5]+2) + "|")    
+
+    while diccionario1:
+        print(" *** OPCIONES DE GUARDADO ***")
+        print("[1]. Guardar en CSV")
+        print("[2]. Guardar en excel")
+        print("[3]. Salir")
+        respuesta_autor=int(input("Eliga una opcion: "))
+        if respuesta_autor ==1:
+                with open("Reporte_autores.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Título", "Género", "Año", "ISBN", "Fecha de adquisición","Identificador","Autor"]# SON 2 COSAS QUE DEBEN SER CAMBIADAS
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in tabla_ejemplares:
+                        escritor_csv.writerow(fila)
+                print("Se guardo el archivo CSV con el nombre de Reporte_autores.csv")
+        elif respuesta_autor ==2:
+            libro_trabajo = openpyxl.Workbook()
+            hoja = libro_trabajo.active
+            encabezados = ["Título", "Género", "Año", "ISBN", "Fecha de adquisición", "Identificador", "Autor"]
+            for columna, encabezado in enumerate(encabezados, start=1):
+                hoja.cell(row=1, column=columna, value=encabezado)
+
+            for fila, ejemplar in enumerate(tabla_ejemplares, start=2):
+                for columna, valor in enumerate(ejemplar, start=1):
+                    hoja.cell(row=fila, column=columna, value=valor)
+            libro_trabajo.save("Reporte_autores.xlsx")
+            
+            print("Los datos se han guardado en un archivo Excel con el nombre de Reporte_autores.xlsx")
+        elif respuesta_autor ==3:
+            sub_menu()
+        else:
+            print("Opción inválida. Por favor, intente nuevamente")
+
+
+def reporte_genero():
+    generos = list(set([libro["genero"] for libro in diccionario1.values()]))
+    print("Géneros disponibles:")
+    for i, genero in enumerate(generos):
+        print(f"{i+1}. {genero}")
+    opcion_genero = int(input("Seleccione el número del género: "))
+    genero_seleccionado = generos[opcion_genero - 1]
+    tabla_ejemplares = []
+    for identificador, libro in diccionario1.items():
+        if libro["genero"] == genero_seleccionado:
+            tabla_ejemplares.append([libro["titulo"], libro["autor"], libro["año"], libro["isbn"], libro["fecha"], identificador, libro["genero"]])
+    longitudes_columnas = [max([len(str(ejemplar[i])) for ejemplar in tabla_ejemplares]+[len(header[i])]) for i, header in enumerate(["Título", "Autor", "Año", "ISBN", "Fecha de adquisición"])]
+    print(f"Reporte para el género '{genero_seleccionado}':")
+    print("| Título" + " "*(longitudes_columnas[0]-6) + " | Autor" + " "*(longitudes_columnas[1]-5) + " | Año" + " "*(longitudes_columnas[2]-4) + " | ISBN" + " "*(longitudes_columnas[3]-13) + " | Fecha de adquisición" + " "*(longitudes_columnas[4]-21) + " |")
+    print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|")
+    for ejemplar in tabla_ejemplares:
+        print(f"| {ejemplar[0]:{longitudes_columnas[0]}} | {ejemplar[1]:{longitudes_columnas[1]}} | {ejemplar[2]:{longitudes_columnas[2]}} | {ejemplar[3]:{longitudes_columnas[3]}} | {ejemplar[4]:{longitudes_columnas[4]}} |")
+        print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|")
+    while diccionario1:
+        print(" *** OPCIONES DE GUARDADO ***")
+        print("[1]. Guardar en CSV")
+        print("[2]. Guardar en excel")
+        print("[3]. Salir")
+        respuesta_genero=int(input("Eliga una opcion: "))
+        if respuesta_genero ==1:
+            with open("Reporte_genero.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Título", "Autor", "Año", "ISBN", "Fecha de adquisición", "Identificador", "Genero"]
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in tabla_ejemplares:
+                        escritor_csv.writerow(fila)
+                        print("Se guardo el archivo CSV con el nombre de Reporte_genero.csv")
+        elif respuesta_genero == 2:
+            libro_trabajo = openpyxl.Workbook()
+            hoja = libro_trabajo.active
+            encabezados = ["Título", "Autor", "Año", "ISBN", "Fecha de adquisición", "Identificador", "Genero"]
+            for columna, encabezado in enumerate(encabezados, start=1):
+                hoja.cell(row=1, column=columna, value=encabezado)
+
+            for fila, ejemplar in enumerate(tabla_ejemplares, start=2):
+                for columna, valor in enumerate(ejemplar, start=1):
+                    hoja.cell(row=fila, column=columna, value=valor)
+            libro_trabajo.save("Reporte_genero.xlsx")
+            
+            print("Los datos se han guardado en un archivo Excel con el nombre de Reporte_genero.xlsx")
+        elif respuesta_genero == 3:
+            sub_menu()
+        else:
+            print("Opción inválida. Por favor, intente nuevamente")
+
+def reporte_por_año():
+    
+    años = list(set([libro["año"] for libro in diccionario1.values()]))
+
+    
+    print("Años disponibles:")
+    for i, año in enumerate(años):
+        print(f"{i+1}. {año}")
+    opcion_año = int(input("Seleccione el número del año: "))
+    año_seleccionado = años[opcion_año - 1]
+
+    
+    tabla_ejemplares = []
+    for identificador, libro in diccionario1.items():
+        if libro["año"] == año_seleccionado:
+            tabla_ejemplares.append([libro["titulo"], libro["autor"], libro["genero"], libro["isbn"], libro["fecha"], identificador,libro["año"]])
+
+    
+    longitudes_columnas = [max([len(str(ejemplar[i])) for ejemplar in tabla_ejemplares]+[len(header[i])]) for i, header in enumerate(["Título", "Autor", "Género", "ISBN", "Fecha de adquisición"])]
+
+    
+    print(f"Reporte para el año '{año_seleccionado}':")
+    print("| Título" + " "*(longitudes_columnas[0]-6) + " | Autor" + " "*(longitudes_columnas[1]-5) + " | Género" + " "*(longitudes_columnas[2]-6) + " | ISBN" + " "*(longitudes_columnas[3]-13) + " | Fecha de adquisición" + " "*(longitudes_columnas[4]-21) + " |")
+    print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|")
+    for ejemplar in tabla_ejemplares:
+        print(f"| {ejemplar[0]:{longitudes_columnas[0]}} | {ejemplar[1]:{longitudes_columnas[1]}} | {ejemplar[2]:{longitudes_columnas[2]}} | {ejemplar[3]:{longitudes_columnas[3]}} | {ejemplar[4]:{longitudes_columnas[4]}} |")
+        print("|" + "-"*(longitudes_columnas[0]+2) + "|" + "-"*(longitudes_columnas[1]+2) + "|" + "-"*(longitudes_columnas[2]+2) + "|" + "-"*(longitudes_columnas[3]+2) + "|" + "-"*(longitudes_columnas[4]+2) + "|")
+    while diccionario1:
+        print(" *** OPCIONES DE GUARDADO ***")
+        print("[1]. Guardar en CSV")
+        print("[2]. Guardar en excel")
+        print("[3]. Salir")
+        respuesta_genero=int(input("Eliga una opcion: "))
+        if respuesta_genero ==1:
+            with open("Reporte_Año.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Título", "Autor", "Genero", "ISBN", "Fecha de adquisición","identificador", "Año"]
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in tabla_ejemplares:
+                        escritor_csv.writerow(fila)
+                        print("Se guardo el archivo CSV con el nombre de Reporte_año.csv")
+        elif respuesta_genero == 2:
+            libro_trabajo = openpyxl.Workbook()
+            hoja = libro_trabajo.active
+            encabezados = ["Título", "Autor", "Genero", "ISBN", "Fecha de adquisición","Identificador","Año"]
+            for columna, encabezado in enumerate(encabezados, start=1):
+                hoja.cell(row=1, column=columna, value=encabezado)
+
+            for fila, ejemplar in enumerate(tabla_ejemplares, start=2):
+                for columna, valor in enumerate(ejemplar, start=1):
+                    hoja.cell(row=fila, column=columna, value=valor)
+            libro_trabajo.save("Reporte_Año.xlsx")
+            
+            print("Los datos se han guardado en un archivo Excel con el nombre de Reporte_año.xlsx")
+        elif respuesta_genero == 3:
+            sub_menu()
+        else:
+            print("Opción inválida. Por favor, intente nuevamente")
+
+def submenu_reporte():
+    print("*** Menu de reportes ***")
+    print("ELIJA UNA OPCION")
+    print("[1]. Catalogo completo")
+    print("[2]. Reporte por autor")
+    print("[3]. Reporte por genero")
+    print("[4]. Reporte por año de publicacion")
+    print("[5]. Regresar al menu de consulta")
+    respuesta = int(input("¿Cual es la opcion que desea?: "))
+    if respuesta == 1:
+        reporte_total()
+    elif respuesta == 2:
+        reporte()
+    elif respuesta == 3:
+        reporte_genero()
+    elif respuesta == 4:
+        reporte_por_año()
+    elif respuesta == 5:
+        sub_menu()
+    else:
+        print("Opción inválida. Por favor, intente nuevamente")
+
+def reporte_total():
+    
+    data = [[key, value["titulo"], value["autor"], value["genero"], value["año"], value["isbn"], value["fecha"]] for key, value in diccionario1.items()]
+
+
+    headers = ["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"]
+    print(tabulate(data, headers=headers))
+    while diccionario1:
+        print(" *** OPCIONES DE GUARDADO ***")
+        print("[1]. Guardar en CSV")
+        print("[2]. Guardar en excel")
+        print("[3]. Salir")
+        respuesta_reporte_total=int(input("Eliga una opcion: "))
+        if respuesta_reporte_total ==1:  
+            with open("Reporte_total.csv", "w", newline="", encoding="utf-8") as archivo_csv:
+                escritor_csv = csv.writer(archivo_csv)
+                escritor_csv.writerow(headers)
+                for fila in data:
+                    escritor_csv.writerow(fila)
+                print("Los datos se han guardado en 'Reporte_total.csv'.")
+        if respuesta_reporte_total==2:
+            libro_trabajo = openpyxl.Workbook()
+            hoja_trabajo = libro_trabajo.active
+            headers = ["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"]
+            hoja_trabajo.append(headers)
+            for fila in data:
+                hoja_trabajo.append(fila)
+                libro_trabajo.save("Reporte_total.xlsx")
+
+                print("Reporte guardado en Excel exitosamente.")
+        if respuesta_reporte_total==3:
+            sub_menu()
+
+def reporte_total1():
+    
+    data = [[key, value["titulo"], value["autor"], value["genero"], value["año"], value["isbn"], value["fecha"]] for key, value in diccionario1.items()]
+
+
+    headers = ["Identificador", "Título", "Autor", "Género", "Año", "ISBN", "Fecha de adquisición"]
+    print(tabulate(data, headers=headers))   
+    
+      
+
+menu_principal()
