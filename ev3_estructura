@@ -1,0 +1,558 @@
+from datetime import datetime
+import csv
+import openpyxl
+import sqlite3
+from sqlite3 import Error
+import os
+import sys
+from prettytable import PrettyTable
+import emoji
+from pyfiglet import figlet_format
+from colorama import Fore
+
+
+def menu_principal():
+    try:
+        while True:
+            print(Fore.LIGHTMAGENTA_EX + figlet_format("¡ Bienvenido a la libreria-Xichoble !",font="standard") + emoji.emojize(":books:"))
+            print("\033[1;35m-----------------------\033[0m")
+            print("\033[1;35m*** MENU PRINCIPAL ***\033[0m")
+            print("\033[1;35m-----------------------\033[0m")
+            print("\033[1;36m** ELIJA UNA OPCION **\033[0m")
+            print("\033[1;36m-----------------------\033[0m")
+            print("[1]. Agregar un nuevo registro")
+            print("[2]. Agregar Autor")
+            print("[3]. Agregar Genero")
+            print("[4]. Consultar registros")
+            print("[5]. Salir")
+            print("\033[1;36m-----------------------\033[0m")
+            respuesta = int(input("\033[1;36m¿Cual es la opcion que desea?:\033[0m"))
+            print("\033[1;36m-----------------------\033[0m")
+            if respuesta == 1:
+                agregar_registro()
+            elif respuesta == 2:
+               agregar_autor()
+            elif respuesta == 3:
+                agregar_genero()
+            elif respuesta == 4:
+                sub_menu()
+            elif respuesta == 5:
+                print("Hasta pronto " + emoji.emojize(":smiling_face_with_smiling_eyes:"))
+                exit()    
+            else:
+                print("\033[1;33mOpcion Invalida. Por favor agregue una opcion valida. \U0001F620\033[0m")
+    except ValueError:
+        print("\033[1;31mOpcion Invalida. Por favor agregue una opcion valida.\U0001F620\033[0m")
+        menu_principal()
+
+def agregar_autor():
+    while True:
+        usuario=input("¿Desea agregar un nuevo Autor?[S/N]: ").upper()
+        if usuario == "S":
+            try:
+                autor=input("Ingrese el nombre del Autor: ")
+                while not autor.replace(" ", "").isalpha():
+                        autor=input("\033[1;31mEl nombre del autor solo puede contener letras. Ingrese el nombre del autor:\U0001F620\033[0m")
+                        autor= autor.upper()
+                with sqlite3.connect("libros.db") as conn:
+                        autor_dato =(autor)
+                        mi_cursor= conn.cursor()
+                        mi_cursor.execute("INSERT INTO autor (nombre_autor) VALUES (?)", (autor,))
+                        conn.commit() 
+                        print("\033[32mRegistros Guardados\033[0m")
+            except Error as e:
+                print(e)
+        else:
+            menu_principal()
+
+def agregar_genero():
+    while True:
+        usuario_g=input("¿Desea agregar un nuevo Genero?[S/N]: ").upper()
+        if usuario_g == "S":
+            try:
+                genero=input("Ingrese el Genero: ")
+                while not genero.replace(" ", "").isalpha():
+                        genero=input("\033[1;31mEl nombre del autor solo puede contener letras. Ingrese el nombre del autor:\U0001F620\033[0m")
+                        genero= genero.upper()
+                with sqlite3.connect("libros.db") as conn:
+                        genero_dato =(genero)
+                        mi_cursor= conn.cursor()
+                        mi_cursor.execute("INSERT INTO genero (nombre_genero) VALUES (?)", (genero,))
+                        conn.commit() 
+                        print("\033[32mRegistros Guardados\033[0m")
+            except Error as e:
+                print(e)
+        else:
+            menu_principal()
+
+
+def agregar_registro():
+    while True:
+        continuar = input("¿Desea agregar un nuevo ejemplar?[S/N]: ").upper()
+        if continuar == "S":
+            try:
+                titulo = input("¿Ingrese el nombre del ejemplar?: ")
+                while not titulo.replace(" ", "").isalpha():
+                    titulo = input("\033[1;31mEl título solo puede contener letras. Ingrese el nombre del ejemplar:\U0001F620\033[0m ")
+                titulo = titulo.upper()
+
+                año = input("¿Cual es el año de publicacion?: ")
+                while not año.isdigit():
+                    año = input("\033[1;31mEl año debe ser un número. Ingrese el año de publicación:\U0001F620\033[0m" )
+
+                isbn = input("¿Cual es el isbn?: ").upper()
+                while not isbn.isdigit() or len(isbn) != 13:
+                    isbn = input("\033[1;31mEl ISBN debe ser un número de 13 dígitos. Ingrese el ISBN:\U0001F620\033[0m " ).upper()
+
+                fecha_adquisicion = input("¿Dime la fecha de adquisicion (en formato dd-mm-yyyy)?: ")
+                try:
+                    fecha_adquisicion = datetime.strptime(fecha_adquisicion, '%d-%m-%Y').date()
+                except ValueError:
+                    fecha_adquisicion = None
+
+                while not fecha_adquisicion:
+                    fecha_adquisicion = input("\033[1;31mLa fecha debe estar en formato dd-mm-yyyy. Ingrese la fecha de adquisición:\U0001F620\033[0m ")
+                    try:
+                        fecha_adquisicion = datetime.strptime(fecha_adquisicion, '%d-%m-%Y').date()
+                    except ValueError:
+                        fecha_adquisicion = None
+                print(query_autores())
+                autor_id = input("¿Cuál es el id del autor?: ")
+                while not autor_id.isdigit():
+                    autor_id = input("\033[1;31mEl id del autor debe ser un número. Ingrese el id del autor:\U0001F620\033[0m ")
+                print(query_generos())
+                genero_id = input("¿Cuál es el id del género?: ")
+                while not genero_id.isdigit():
+                    genero_id = input("\033[1;31mEl id del género debe ser un número. Ingrese el id del género:\U0001F620\033[m0 ")
+
+                with sqlite3.connect("libros.db") as conn:
+                    mi_cursor = conn.cursor()
+                    mi_cursor.execute("INSERT INTO libro (titulo, ano, isbn, fecha_adquisicion, clave_autor_id, clave_genero_id) VALUES (?, ?, ?, ?, ?, ?)", (titulo, año, isbn, fecha_adquisicion, autor_id, genero_id))
+                    conn.commit()
+                    print("\033[32mRegistro guardado\033[0m")
+
+            except Error as e:
+                print(e)
+
+        else:
+            menu_principal()
+
+def sub_menu():
+    try:
+        while True:
+            print("\n")
+            print("\033[1;35m-----------------------\033[0m")
+            print("\033[1;35m*** MENU PRINCIPAL ***\033[0m")
+            print("\033[1;35m-----------------------\033[0m")
+            print("\033[1;34m** ELIJA UNA OPCION **\033[0m")
+            print("[1]. Búsqueda de libro")
+            print("[2]. Reporte")
+            print("[3]. Volver al menu principal")
+            print("\033[1;36m-----------------------\033[0m")
+            respuesta = int(input("\033[1;36m¿Cual es la opcion que desea?:\033[0m"))
+            print("\033[1;36m-----------------------\033[0m")
+            if respuesta == 1:
+                consultar_ejemplar()
+            elif respuesta == 2:
+                submenu_reporte()
+            elif respuesta == 3:
+                menu_principal()
+            else:
+                print("\033[1;31mVuelva a escoger una opcion valida\U0001F620\033[0m")
+    except ValueError:
+        print("\033[1;31mOpcion Invalida. Por favor agregue una opcion valida.\U0001F620\033[m0")
+        sub_menu() 
+
+def consultar_ejemplar():
+    try:
+        conexion = sqlite3.connect("libros.db")
+        cursor = conexion.cursor()
+
+        while True:
+            print("\033[1;33m-----------------------\033[0m")
+            opcion = input("\033[1;33m¿Desea buscar por título, por ISBN o salir?\033[0m").lower()
+            print("\033[1;33m-----------------------\033[0m")
+            if opcion == "titulo" or opcion == "isbn" or opcion == "salir":
+                break
+            else:
+                print("\033[1;31mOpción no válida. Por favor, elija 'titulo', 'isbn' o 'salir'.\U0001F620\033[m0")
+        if opcion == "salir":
+            return  
+        busqueda = input("\033[1;33mIngrese el valor a buscar:\033[0m").upper()
+        print("\033[1;33m-----------------------\033[0m")
+
+        if opcion == "titulo":
+            consulta = """SELECT libro.clave_libro, libro.titulo, libro.ano, libro.isbn, libro.fecha_adquisicion,
+                          autor.nombre_autor, genero.nombre_genero
+                          FROM libro
+                          INNER JOIN autor ON libro.clave_autor_id = autor.clave_autor
+                          INNER JOIN genero ON libro.clave_genero_id = genero.clave_genero
+                          WHERE libro.titulo = ?"""
+            cursor.execute(consulta, (busqueda,))
+
+        elif opcion == "isbn":
+            consulta = """SELECT libro.clave_libro, libro.titulo, libro.ano, libro.isbn, libro.fecha_adquisicion,
+                          autor.nombre_autor, genero.nombre_genero
+                          FROM libro
+                          INNER JOIN autor ON libro.clave_autor_id = autor.clave_autor
+                          INNER JOIN genero ON libro.clave_genero_id = genero.clave_genero
+                          WHERE libro.isbn = ?"""
+            cursor.execute(consulta, (busqueda,))
+
+        resultados = cursor.fetchall()
+        if len(resultados) > 0:
+            tabla = PrettyTable()
+            tabla.field_names = ["\033[1;35mClave", "Título", "Año", "ISBN", "Fecha Adquisición", "Autor", "Género\033[0m"]
+            for resultado in resultados:
+                tabla.add_row(resultado[0:4] + (str(resultado[4]),) + resultado[5:])
+            print(tabla)
+        else:
+            print("\033[1;31mNo se encontraron resultados para la búsqueda.\033[m0")
+    except sqlite3.Error as error:
+        print("\033[1;31mError al consultar la base de datos:\U0001F620", error)
+
+
+def submenu_reporte():
+    try:
+        print("\033[1;35m-----------------------\033[0m")
+        print("\033[1;35m*** MENU PRINCIPAL ***\033[0m")
+        print("\033[1;35m-----------------------\033[0m")
+        print("\033[1;36m** ELIJA UNA OPCION **\033[0m")
+        print("\033[1;36m-----------------------\033[0m")
+        print("[1]. Catalogo completo")
+        print("[2]. Reporte por autor")
+        print("[3]. Reporte por genero")
+        print("[4]. Reporte por año de publicacion")
+        print("[5]. Regresar al menu de consulta")
+        print("\033[1;36m-----------------------\033[0m")
+        respuesta = int(input("\033[1;36m¿Cual es la opcion que desea?:\033[0m"))
+        print("\033[1;36m-----------------------\033[0m")
+        if respuesta == 1:
+            query_reporte_total()
+        elif respuesta == 2:
+            query_reporte_autores()
+        elif respuesta == 3:
+            query_reporte_genero()
+        elif respuesta == 4:
+            query_reporte_ano()
+        elif respuesta == 5:
+            sub_menu()
+        else:
+            print("\033[1;33mOpción inválida. Por favor, intente nuevamente\U0001F620\033[m0")
+    except ValueError:
+        print("\033[1;33mOpción inválida. Por favor, intente nuevamente\U0001F620\033[m0")
+        submenu_reporte()
+
+
+def query_reporte_total():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT libro.clave_libro,nombre_autor,libro.titulo,nombre_genero,libro.ano,libro.isbn,libro.fecha_adquisicion FROM libro INNER JOIN autor ON libro.clave_autor_id = autor.clave_autor INNER JOIN genero ON libro.clave_genero_id = genero.clave_genero")
+        intento = mi_cursor.fetchall()
+        table = PrettyTable(['\033[1;35mId','Autor','Titulo','Genero','Año','ISBN','Fecha de adquisicion\033[0m'])
+        for clave_libro,autor, titulo,genero,ano,isbn,fecha_adquisicion in intento:
+            table.add_row([clave_libro,autor,titulo, genero,ano, isbn, fecha_adquisicion])   
+        print(table)
+        
+        data = [[clave_libro, autor, titulo, genero, ano, isbn, fecha_adquisicion] for clave_libro,autor, titulo,genero,ano,isbn,fecha_adquisicion in intento]
+        headers = ["Id", "Autor", "Titulo", "Genero", "Año", "ISBN", "Fecha de adquisicion"]
+
+        while True:
+            try:
+                print("\033[1;35m-----------------------\033[0m")
+                print("\033[1;35m * OPCIONES DE GUARDADO *\033[0m")
+                print("\033[1;35m-----------------------\033[0m")
+                print("[1]. Guardar en CSV")
+                print("[2]. Guardar en Excel")
+                print("[3]. Salir")
+                print("\033[1;36m-----------------------\033[0m")
+                respuesta_reporte_total = int(input("\033[1;36mElija la opcion en que sea guardar:\033[0m"))
+                print("\033[1;36m-----------------------\033[0m")
+                if respuesta_reporte_total == 1:
+                    with open("Reporte_total.csv", "w", newline="", encoding="utf-8") as archivo_csv:
+                        escritor_csv = csv.writer(archivo_csv)
+                        escritor_csv.writerow(headers)
+                        for fila in data:
+                            escritor_csv.writerow(fila)
+                        print("\033[32mLos datos se han guardado en 'Reporte_total.csv'.\033[0m")
+                elif respuesta_reporte_total == 2:
+                    libro_trabajo = openpyxl.Workbook()
+                    hoja_trabajo = libro_trabajo.active
+                    hoja_trabajo.title = "Reporte Total"
+                    hoja_trabajo.append(headers)
+                    for fila in data:
+                        hoja_trabajo.append(fila)
+                    libro_trabajo.save("Reporte_total.xlsx")
+                    print("\033[32mReporte guardado en Excel exitosamente.\033[0m")
+                elif respuesta_reporte_total == 3:
+                        break
+            except ValueError as e:
+                        print("Error:", e)
+                        print("\033[1;31mOpción inválida. Por favor, intente nuevamente\U0001F620\033[m0")
+    
+def query_reporte_autores():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT nombre_autor FROM autor")
+        autores = mi_cursor.fetchall()
+        print("Autores disponibles:")
+        for i, autor in enumerate(autores):
+            print(f"{i+1}. {autor[0]}")
+        print("\033[1;36m-----------------------\033[0m")
+        opcion_autor = input("\033[1;36mSeleccione el número del autor:\033[0m")
+        print("\033[1;36m-----------------------\033[0m")
+        if not opcion_autor.isdigit() or int(opcion_autor) < 1 or int(opcion_autor) > len(autores):
+            print("\033[1;31mOpción inválida. Por favor, seleccione un número válido.\033[0m")
+            return
+        
+        opcion_autor = int(opcion_autor)
+        autor_seleccionado = autores[opcion_autor - 1][0]
+        mi_cursor.execute("SELECT titulo, genero.nombre_genero, ano, isbn, fecha_adquisicion, clave_libro FROM libro JOIN autor ON libro.clave_autor_id = autor.clave_autor JOIN genero ON libro.clave_genero_id = genero.clave_genero WHERE autor.nombre_autor = ?", (autor_seleccionado,))
+        tabla_ejemplares = mi_cursor.fetchall()
+        if len(tabla_ejemplares) == 0:
+            print(f"\033[1;31mNo se encontraron libros para el autor '{autor_seleccionado}'.\033[0m")
+            return
+        
+        table = PrettyTable(['\033[1;35mTítulo', 'Género', 'Año', 'ISBN', 'Fecha de adquisición', 'Identificador\033[0m'])
+        for ejemplar in tabla_ejemplares:
+            table.add_row(list(ejemplar))
+        print(f"\33[1;36mReporte para el autor '{autor_seleccionado}':\033[0m")
+        print("\033[1;36m-----------------------\033[0m")
+        print(table)
+
+        while True:
+            try:
+                print("\033[1;35m-----------------------\033[0m")
+                print("\033[1;35m * OPCIONES DE GUARDADO *\033[0m")
+                print("\033[1;35m-----------------------\033[0m")
+                print("[1]. Guardar en CSV")
+                print("[2]. Guardar en excel")
+                print("[3]. Salir")
+                print("\033[1;35m-----------------------\033[0m")
+                respuesta_genero=int(input("\033[1;35mElija la opcion en la que desea guardar los datos:\033[0m"))
+                print("\033[1;35m-----------------------\033[0m")
+            except ValueError:
+                print("\033[1;31mError: debe ingresar un número entero. Por favor, intente nuevamente.\U0001F620\033[m0")
+                continue
+            if respuesta_genero == 1:
+                with open(f"Reporte_{autor_seleccionado}_libros.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Título", "Género", "Año", "ISBN", "Fecha de adquisición","ID"]
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in tabla_ejemplares:
+                        escritor_csv.writerow(fila)
+                print(f"Se guardó el archivo CSV con el nombre de Reporte_{autor_seleccionado}_libros.csv")
+                break
+            elif respuesta_genero == 2:
+                libro_trabajo = openpyxl.Workbook()
+                hoja = libro_trabajo.active
+                encabezados = ["Título","Género", "Año", "ISBN", "Fecha de adquisición","ID"]
+                for columna, encabezado in enumerate(encabezados, start=1):
+                    hoja.cell(row=1, column=columna, value=encabezado)
+
+                for fila, ejemplar in enumerate(tabla_ejemplares, start=2):
+                    for columna, valor in enumerate(ejemplar, start=1):
+                        hoja.cell(row=fila, column=columna, value=valor)
+                libro_trabajo.save(f"Reporte_{autor_seleccionado}_libros.xlsx")
+                print(f"Los datos se han guardado en un archivo Excel con el nombre de Reporte_{autor_seleccionado}_libros.xlsx")
+                break
+            elif respuesta_genero == 3:
+                break
+            else:
+                print("\033[1;31mOpción no válida. Por favor, intente nuevamente.\U0001F620\033[m0")
+
+
+def query_reporte_genero():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT nombre_genero FROM genero")
+        generos = mi_cursor.fetchall()
+        print("Géneros disponibles:")
+        for i, genero in enumerate(generos):
+            print(f"{i+1}. {genero[0]}")
+        print("\033[1;35m-----------------------\033[0m")
+        opcion_genero = input("\033[1;35mSeleccione el número del género:\033[0m")
+        print("\033[1;35m-----------------------\033[0m")
+        if not opcion_genero.isdigit() or int(opcion_genero) < 1 or int(opcion_genero) > len(generos):
+            print("\033[1;31mOpción inválida. Por favor, seleccione un número válido.\U0001F620\033[m0")
+            return
+        
+        opcion_genero = int(opcion_genero)
+        genero_seleccionado = generos[opcion_genero - 1][0]
+        mi_cursor.execute("SELECT genero.nombre_genero,libro.titulo, autor.nombre_autor, libro.ano, libro.isbn, libro.fecha_adquisicion, genero.clave_genero FROM libro JOIN autor ON libro.clave_autor_id = autor.clave_autor JOIN genero ON libro.clave_genero_id = genero.clave_genero WHERE genero.nombre_genero = ?", (genero_seleccionado,))
+        tabla_ejemplares = mi_cursor.fetchall()
+        
+        if len(tabla_ejemplares) == 0:
+            print(f"\033 [1;31mNo se encontraron libros para el género '{genero_seleccionado}'.\U0001F620\033[m0")
+            return
+        tabla = PrettyTable(['\033[1;35mGénero', 'Título', 'Autor', 'Año', "ISBN", 'Fecha de adquisición', 'Id\033[0m'])
+        for fila in tabla_ejemplares:
+            tabla.add_row(list(fila))
+        
+        print(f"Reporte para el género '{genero_seleccionado}':")
+        print(tabla)
+    while True:
+            try:
+                print("\033[1;35m-----------------------\033[0m")
+                print("\033[1;35m * OPCIONES DE GUARDADO *\033[0m")
+                print("\033[1;35m-----------------------\033[0m")
+                print("[1]. Guardar en CSV")
+                print("[2]. Guardar en Excel")
+                print("[3]. Salir")
+                print("\033[1;35m-----------------------\033[0m")
+                respuesta_genero = int(input("\033 [1;35mElija la opción en la que desea guardar los datos:\033[0m"))
+                print("\033[1;35m-----------------------\033[0m")
+            except ValueError:
+                print("\033[1;31mError: debe ingresar un número entero. Por favor, intente nuevamente.\U0001F620\033[m0")
+                continue
+            if respuesta_genero == 1:
+                with open(f"Reporte_{genero_seleccionado}.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Genero","Título", "Autor", "Año", "ISBN", "Fecha de adquisición","ID"]
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in tabla_ejemplares:
+                        escritor_csv.writerow(fila)
+                print(f"Se guardó el archivo CSV con el nombre de Reporte_{genero_seleccionado}.csv")
+                break
+            elif respuesta_genero == 2:
+                libro_trabajo = openpyxl.Workbook()
+                hoja = libro_trabajo.active
+                encabezados = ["Genero", "Título", "Autor", "Año", "ISBN", "Fecha de adquisición","ID"]
+                for columna, encabezado in enumerate(encabezados, start=1):
+                    hoja.cell(row=1, column=columna, value=encabezado)
+
+                for fila, ejemplar in enumerate(tabla_ejemplares, start=2):
+                    for columna, valor in enumerate(ejemplar, start=1):
+                        hoja.cell(row=fila, column=columna, value=valor)
+                libro_trabajo.save(f"Reporte_{genero_seleccionado}.xlsx")
+                print(f"Los datos se han guardado en un archivo Excel con el nombre de genero_{genero_seleccionado} _libro.xlsx")   
+                break
+            elif respuesta_genero == 3:          
+                break 
+            else:
+                print("\033[1;31mOpción no válida. Por favor, intente nuevamente.\U0001F620\033[m0")
+
+def query_reporte_ano():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT libro.ano, nombre_autor, genero.nombre_genero, libro.isbn, libro.fecha_adquisicion, libro.clave_libro FROM libro INNER JOIN autor ON libro.clave_autor_id = autor.clave_autor INNER JOIN genero ON libro.clave_genero_id = genero.clave_genero")
+        resultados = mi_cursor.fetchall()
+        print("Años disponibles:")
+        anos_unicos = sorted(set([r[0] for r in resultados]))
+        for i, ano in enumerate(anos_unicos):
+            print(f"{i+1}. {ano}")
+        print("\033[1;35m-----------------------\033[0m")
+        opcion_ano = int(input("\033[1;35mSeleccione el número del año:\033[0m"))
+        print("\033[1;35m-----------------------\033[0m")
+        ano_seleccionado = anos_unicos[opcion_ano-1]
+
+        mi_cursor.execute(f"SELECT libro.ano, nombre_autor, genero.nombre_genero, libro.isbn, libro.fecha_adquisicion, libro.clave_libro FROM libro INNER JOIN autor ON libro.clave_autor_id = autor.clave_autor INNER JOIN genero ON libro.clave_genero_id = genero.clave_genero WHERE libro.ano = {ano_seleccionado}")
+        resultados = mi_cursor.fetchall()
+        table = PrettyTable(['\033[1;35mFecha de publicación','Autores', 'Género', 'ISBN', 'Fecha de adquisición', 'ID\033[0m'])
+        for resultado in resultados:
+            table.add_row(list(resultado))
+        print(f"\033[1;35mReporte para el año '{ano_seleccionado}'\033[0m")
+        print("\033[1;35m-----------------------\033[0m")
+        print(table)
+
+    while True:
+            try:
+                print("\033[1;35m-----------------------\033[0m")
+                print("\033[1;35m * OPCIONES DE GUARDADO *\033[0m")
+                print("\033[1;35m-----------------------\033[0m")
+                print("[1]. Guardar en CSV")
+                print("[2]. Guardar en excel")
+                print("[3]. Salir")
+                print("\033[1;35m-----------------------\033[0m")
+                respuesta = int(input("Elija la opcion en la que desea guardar los datos: "))
+                print("\033[1;35m-----------------------\033[0m")
+            except ValueError:
+                print("\033[1;31mError: debe ingresar un número entero. Por favor, intente nuevamente.\U0001F620\033[m0")
+                continue
+
+            if respuesta == 1:
+                with open("Reporte_ano.csv", 'w', newline='') as archivo_csv:
+                    encabezado = ["Fecha de publicacion", "Autores","Genero","ISBN","Fecha adquisicion","ID"]
+                    escritor_csv = csv.writer(archivo_csv)
+                    escritor_csv.writerow(encabezado)
+                    for fila in resultados:
+                        escritor_csv.writerow(fila)
+                print("Se guardó el archivo CSV con el nombre de Reporte_ano.csv")
+                break
+            elif respuesta == 2:
+                libro_trabajo = openpyxl.Workbook()
+                hoja = libro_trabajo.active
+                encabezados = ["Fecha de publicacion", "Autores","Genero","ISBN","Fecha adquisicion","ID"]
+                for columna, encabezado in enumerate(encabezados, start=1):
+                    hoja.cell(row=1, column=columna, value=encabezado)
+
+                for fila, resultado in enumerate(resultados, start=2):
+                    for columna, valor in enumerate(resultado, start=1):
+                        hoja.cell(row=fila, column=columna, value=valor)
+                libro_trabajo.save("Reporte_ano.xlsx")
+                print("Los datos se han guardado en un archivo Excel con el nombre de Reporte_ano.xlsx")
+                break
+            elif respuesta == 3:
+                break
+            else:
+                print("\033 [1;31mOpción inválida. Por favor, seleccione una opción válida.\U0001F620\033[m0")
+
+
+
+def query_autores():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT * FROM autor")
+        autores = mi_cursor.fetchall()
+        table = PrettyTable(['Id', 'Nombre'])
+        for autor in autores:
+            table.add_row(autor)
+        return table
+
+def query_generos():
+    with sqlite3.connect("libros.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT * FROM genero")
+        generos = mi_cursor.fetchall()
+        table = PrettyTable(['Id', 'Nombre'])
+        for genero in generos:
+            table.add_row(genero)
+        return table
+    
+if os.path.isfile("libros.db"):
+    print("\033[32m" + "-" * 44 + "\033[0m")
+    print("\033[32mSe encontro una base de datos previa\033[0m")
+    print("\033[32mSe usara la base de datos llamada: libros.db\033[0m")
+    print("\033[32m" + "-" * 44 + "\033[0m")
+    try:
+        with sqlite3.connect("libros.db") as conn:
+            print(sqlite3.version)
+            pass
+        menu_principal()
+    except Error as e:
+        print(e)
+else:
+    print("\033[1;31mNo se encontro una base de datos previa:\033[0m")
+    try:
+        with sqlite3.connect("libros.db") as conn:
+            print(sqlite3.version)
+            pass
+    except Error as e:
+        print(e)
+
+    try:
+        with sqlite3.connect("libros.db") as conn:
+            mi_cursor = conn.cursor()
+            mi_cursor.execute("CREATE TABLE IF NOT EXISTS autor (clave_autor INTEGER PRIMARY KEY AUTOINCREMENT, nombre_autor TEXT NOT NULL);")
+            mi_cursor.execute("CREATE TABLE IF NOT EXISTS genero (clave_genero INTEGER PRIMARY KEY AUTOINCREMENT, nombre_genero TEXT NOT NULL);")
+            mi_cursor.execute("CREATE TABLE IF NOT EXISTS libro (clave_libro INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, ano INTEGER, isbn INTEGER, fecha_adquisicion DATE, clave_autor_id INTEGER NOT NULL, clave_genero_id INTEGER NOT NULL, FOREIGN KEY (clave_autor_id) REFERENCES autor(clave_autor), FOREIGN KEY (clave_genero_id) REFERENCES genero(clave_genero));")
+            print("Base de datos creada")
+            print("Se creo un archivo llamado: libros.db \n")
+            print("\033[1;31m" + "-" * 62 + "\033[0m")
+            print("\033[1;31mSE RECOMIENDA AGREGAR PRIMERO LOS REGISTROS DE AUTOR Y GENERO.\033[0m")
+            print("\033[1;31m" + "-" * 62 + "\033[0m")
+    except Error as e:
+        print(e)
+    finally: 
+        conn.close()
+        menu_principal()
